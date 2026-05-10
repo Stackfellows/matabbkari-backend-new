@@ -31,6 +31,8 @@ app.use(cors({
     'http://localhost:3000',
     'https://matabbukhari.vercel.app',
     'https://matabbukhari.netlify.app',
+    'https://matabbukhari.com',
+    'https://www.matabbukhari.com',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
