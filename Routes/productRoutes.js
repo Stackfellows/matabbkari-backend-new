@@ -11,7 +11,9 @@ const { uploadProductImage, cloudinary } = require('../Middelwares/uploadMiddlew
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { category, search, sort, page = 1, limit = 12, featured } = req.query;
+    const { category, search, sort, featured } = req.query;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Number(req.query.limit) || 12);
 
     const query = { isActive: true };
 
@@ -34,19 +36,19 @@ router.get(
     };
     const sortBy = sortOptions[sort] || { createdAt: -1 };
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip = (page - 1) * limit;
     const total = await Product.countDocuments(query);
     const products = await Product.find(query)
       .sort(sortBy)
       .skip(skip)
-      .limit(Number(limit));
+      .limit(limit);
 
     res.json({
       success: true,
       count: products.length,
       total,
-      pages: Math.ceil(total / Number(limit)),
-      currentPage: Number(page),
+      pages: Math.ceil(total / limit),
+      currentPage: page,
       data: products,
     });
   })
@@ -74,6 +76,8 @@ router.get(
     res.json({ success: true, data: product });
   })
 );
+
+const { sendBroadcastEmail } = require('../utils/emailBroadcaster');
 
 // @route   POST /api/products
 // @desc    Create a product (Admin)
@@ -103,6 +107,14 @@ router.post(
       tags: tags ? JSON.parse(tags) : [],
       isFeatured: isFeatured === 'true',
     });
+
+    // Notify subscribers about the new product (non-blocking)
+    sendBroadcastEmail({
+      subject: `New Medicine Launched: ${name} 🌿`,
+      title: 'New Product Arrival!',
+      body: `We are excited to introduce our new product: **${name}**.\n\n**Category:** ${category}\n**Price:** Rs ${price}\n\n**About:** ${description}\n\nCheck it out now on our website!`,
+      imageUrl: images.length > 0 ? images[0].url : null
+    }).catch(err => console.error('Product notification error:', err));
 
     res.status(201).json({ success: true, data: product });
   })

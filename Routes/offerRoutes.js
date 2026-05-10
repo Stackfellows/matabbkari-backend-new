@@ -5,6 +5,8 @@ const Offer = require('../Models/Offer');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
 const { uploadOfferImage } = require('../Middelwares/uploadMiddleware');
 
+const { sendBroadcastEmail } = require('../utils/emailBroadcaster');
+
 // @route   POST /api/offers
 // @desc    Add a new offer (Admin)
 // @access  Admin
@@ -29,6 +31,14 @@ router.post(
       expiryDate,
       image
     });
+
+    // Notify subscribers about the new offer (non-blocking)
+    sendBroadcastEmail({
+      subject: `New Special Offer: ${title} 🎁`,
+      title: 'Exciting New Offer!',
+      body: `**${title}**\n${subtitle}\n\n**Discount:** ${discountText}\n${expiryDate ? `**Valid until:** ${new Date(expiryDate).toLocaleDateString()}` : ''}\n\nDon't miss out on this amazing deal!`,
+      imageUrl: image ? image.url : null
+    }).catch(err => console.error('Offer notification error:', err));
 
     res.status(201).json({ success: true, data: offer });
   })

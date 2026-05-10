@@ -92,12 +92,55 @@ router.put(
       throw new Error('Appointment not found');
     }
 
+    const oldStatus = appointment.status;
     appointment.status = status;
     await appointment.save();
+
+    // Send email ONLY if status changed to 'Confirmed'
+    if (status === 'Confirmed' && oldStatus !== 'Confirmed') {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      });
+
+      const confirmHtml = `
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: auto; background: #ffffff; color: #1a1a1a; padding: 40px; border: 1px solid #f0f0f0; border-radius: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+             <h1 style="color: #2b5a41; margin: 0; font-size: 28px;">Appointment Confirmed!</h1>
+             <p style="color: #666; margin-top: 5px;">Matabbukhari Luxury Wellness</p>
+          </div>
+          
+          <p>As-salamu alaykum <strong>${appointment.fullName}</strong>,</p>
+          <p>We are pleased to inform you that your consultation request has been <strong>Confirmed</strong> by our experts.</p>
+          
+          <div style="background: #f8faf9; padding: 25px; border-radius: 15px; border: 1px solid #e8edea; margin: 25px 0;">
+            <h3 style="color: #2b5a41; margin-top: 0; border-bottom: 1px solid #d1dbd4; pb: 10px;">Booking Details</h3>
+            <p style="margin: 10px 0;"><strong>Service:</strong> ${appointment.appointmentType}</p>
+            <p style="margin: 10px 0;"><strong>Date:</strong> ${new Date(appointment.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p style="margin: 10px 0;"><strong>Patient Name:</strong> ${appointment.fullName}</p>
+          </div>
+
+          <p>Our Hakeem will contact you via your provided phone number (<strong>${appointment.phone}</strong>) at the scheduled time.</p>
+          
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 12px;">
+            <p>If you need to reschedule, please contact us at least 24 hours in advance.</p>
+            <p>© 2026 Matabbukhari. All Rights Reserved.</p>
+          </div>
+        </div>
+      `;
+
+      transporter.sendMail({
+        from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
+        to: appointment.email,
+        subject: `✅ Appointment Confirmed — Matabbukhari`,
+        html: confirmHtml,
+      }).catch(err => console.error('Status Update Email Error:', err));
+    }
 
     res.json({ success: true, data: appointment });
   })
 );
+
 
 // @route   DELETE /api/appointments/:id
 // @desc    Delete appointment (Admin)

@@ -19,9 +19,8 @@ const appointmentRoutes = require('./Routes/appointmentRoutes');
 const dashboardRoutes = require('./Routes/dashboardRoutes');
 const expenseRoutes = require('./Routes/expenseRoutes');
 const offerRoutes   = require('./Routes/offerRoutes');
-
-// Connect to MongoDB
-connectDB();
+const subscriberRoutes = require('./Routes/subscriberRoutes');
+const testimonialRoutes = require('./Routes/testimonialRoutes');
 
 const app = express();
 
@@ -62,6 +61,8 @@ app.get('/', (req, res) => {
       dashboard:    '/api/dashboard',
       expenses:     '/api/expenses',
       offers:       '/api/offers',
+      subscribers:  '/api/subscribers',
+      testimonials: '/api/testimonials',
     },
   });
 });
@@ -80,20 +81,25 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/expenses',  expenseRoutes);
 app.use('/api/offers',    offerRoutes);
+app.use('/api/subscribers', subscriberRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 
 // ─── Error Handlers (must be LAST) ───────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
+// ─── Connect & Start ────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3300;
-const server = app.listen(PORT, () => {
-  console.log(`\n🚀  Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-  console.log(`📡  Health: http://localhost:${PORT}/api/health\n`);
-});
 
-// Handle unhandled promise rejections gracefully
-process.on('unhandledRejection', (err) => {
-  console.error('❌  Unhandled Rejection:', err.message);
-  server.close(() => process.exit(1));
+connectDB().then(() => {
+  const server = app.listen(PORT, () => {
+    console.log(`\n🚀  Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`📡  Health: http://localhost:${PORT}/api/health\n`);
+  });
+
+  // Handle unhandled promise rejections gracefully
+  process.on('unhandledRejection', (err) => {
+    console.error('❌  Unhandled Rejection:', err.message);
+    server.close(() => process.exit(1));
+  });
 });
