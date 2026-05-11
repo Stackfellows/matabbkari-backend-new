@@ -21,7 +21,7 @@ router.post(
       url: file.path
     })) : [];
 
-    const appointment = await Appointment.create({
+    const appointmentData = {
       fullName,
       email,
       phone,
@@ -29,7 +29,19 @@ router.post(
       message,
       appointmentType,
       reports
-    });
+    };
+
+    // Attach user if logged in
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer')) {
+      const jwt = require('jsonwebtoken');
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+        appointmentData.user = decoded.id;
+      } catch (_) {}
+    }
+
+    const appointment = await Appointment.create(appointmentData);
 
     // Send confirmation email
     const transporter = nodemailer.createTransport({
@@ -54,11 +66,32 @@ router.post(
     transporter.sendMail({
       from: `"Matabbukhari" <${process.env.EMAIL_USER}>`,
       to: [email, process.env.EMAIL_USER].join(', '),
+      replyTo: process.env.EMAIL_USER,
       subject: `📅 Appointment Received — ${fullName}`,
+      text: `Dear ${fullName},\n\nYour appointment for ${appointmentType} on ${new Date(date).toLocaleDateString()} has been received and is being reviewed.\n\n© Matabbukhari Wellness`,
       html: emailHtml,
     }).catch(err => console.error('Appointment email error:', err));
 
     res.status(201).json({ success: true, data: appointment });
+  })
+);
+
+// @route   GET /api/appointments/my
+// @desc    Get logged-in user's appointments
+// @access  Private
+router.get(
+  '/my',
+  protect,
+  asyncHandler(async (req, res) => {
+    // Search by both userId (if linked) and email
+    const appointments = await Appointment.find({ 
+      $or: [
+        { user: req.user._id },
+        { email: req.user.email }
+      ]
+    }).sort({ createdAt: -1 }).lean();
+    
+    res.json({ success: true, count: appointments.length, data: appointments });
   })
 );
 
@@ -132,7 +165,9 @@ router.put(
       transporter.sendMail({
         from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
         to: appointment.email,
+        replyTo: process.env.EMAIL_USER,
         subject: `✅ Appointment Confirmed — Matabbukhari`,
+        text: `As-salamu alaykum ${appointment.fullName},\n\nYour appointment for ${appointment.appointmentType} on ${new Date(appointment.date).toLocaleDateString()} has been confirmed.\n\n© Matabbukhari Wellness`,
         html: confirmHtml,
       }).catch(err => console.error('Status Update Email Error:', err));
     }

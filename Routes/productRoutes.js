@@ -37,11 +37,16 @@ router.get(
     const sortBy = sortOptions[sort] || { createdAt: -1 };
 
     const skip = (page - 1) * limit;
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .sort(sortBy)
-      .skip(skip)
-      .limit(limit);
+
+    // Parallelize count and find for better performance
+    const [total, products] = await Promise.all([
+      Product.countDocuments(query),
+      Product.find(query)
+        .sort(sortBy)
+        .skip(skip)
+        .limit(limit)
+        .lean()
+    ]);
 
     res.json({
       success: true,
@@ -60,13 +65,15 @@ router.get(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
+    const isObjectId = req.params.id.match(/^[0-9a-fA-F]{24}$/);
+    
     const product = await Product.findOne({
       $or: [
-        { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null },
+        { _id: isObjectId ? req.params.id : null },
         { slug: req.params.id },
       ],
       isActive: true,
-    });
+    }).lean();
 
     if (!product) {
       res.status(404);

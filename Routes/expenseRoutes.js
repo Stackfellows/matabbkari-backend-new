@@ -26,7 +26,7 @@ router.get(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const expenses = await Expense.find().sort({ date: -1 });
+    const expenses = await Expense.find().sort({ date: -1 }).lean();
     res.json({ success: true, count: expenses.length, data: expenses });
   })
 );

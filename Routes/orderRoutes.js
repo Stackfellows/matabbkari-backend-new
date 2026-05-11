@@ -17,18 +17,9 @@ const transporter = nodemailer.createTransport({
 
 // Send order confirmation email
 const sendOrderConfirmationEmail = async (order) => {
-  const recipientEmail = order.user
-    ? order.guestInfo?.email
-    : order.guestInfo?.email;
+  const recipientEmail = order.guestInfo?.email || order.shippingAddress?.email;
 
-  if (!recipientEmail && !order.shippingAddress) return;
-
-  const email = recipientEmail || order.shippingAddress.email || order.guestInfo?.email;
-  if (!email) return;
-
-  const itemsList = order.orderItems
-    .map((item) => `<li>${item.name} × ${item.quantity} — Rs. ${item.price * item.quantity}</li>`)
-    .join('');
+  if (!recipientEmail) return;
 
   const orderIdToDisplay = order.customOrderId || order._id.toString().slice(-8).toUpperCase();
 
@@ -133,22 +124,22 @@ const sendOrderConfirmationEmail = async (order) => {
     </html>
   `;
 
-  await transporter.sendMail({
-    from: `"Matabbukhari" <${process.env.EMAIL_USER}>`,
-    to: [email, process.env.EMAIL_USER].join(', '),
-    subject: `✅ Order Confirmed — #${orderIdToDisplay}`,
-    html: emailHtml,
-  });
+    const mailOptions = {
+      from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
+      to: recipientEmail,
+      replyTo: process.env.EMAIL_USER,
+      subject: `✨ Order Confirmed — Matabbukhari #${orderIdToDisplay}`,
+      text: `Dear ${order.shippingAddress.fullName},\n\nThank you for your order #${orderIdToDisplay}. We have received it and are preparing it with care.\n\nTotal: Rs. ${order.totalPrice.toLocaleString()}\n\n© Matabbukhari Wellness`,
+      html: emailHtml,
+    };
+
+    await transporter.sendMail(mailOptions);
 };
 
 // Send order status update email
 const sendStatusUpdateEmail = async (order, type, newStatus) => {
-  const recipientEmail = order.user
-    ? order.guestInfo?.email
-    : order.guestInfo?.email;
-
-  const email = recipientEmail || order.shippingAddress?.email || order.guestInfo?.email;
-  if (!email) return;
+  const recipientEmail = order.guestInfo?.email || order.shippingAddress?.email;
+  if (!recipientEmail) return;
 
   const orderIdToDisplay = order.customOrderId || order._id.toString().slice(-8).toUpperCase();
   
@@ -232,9 +223,11 @@ const sendStatusUpdateEmail = async (order, type, newStatus) => {
   `;
 
   await transporter.sendMail({
-    from: `"Matabbukhari" <${process.env.EMAIL_USER}>`,
-    to: [email, process.env.EMAIL_USER].join(', '),
+    from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
+    to: recipientEmail,
+    replyTo: process.env.EMAIL_USER,
     subject,
+    text: `Update for Order #${orderIdToDisplay}: ${newStatus}.\n\nVisit us for more details: https://matabbukhari.com`,
     html: emailHtml,
   });
 };
@@ -327,7 +320,9 @@ router.get(
   '/my',
   protect,
   asyncHandler(async (req, res) => {
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ success: true, count: orders.length, data: orders });
   })
 );
@@ -338,14 +333,17 @@ router.get(
 router.get(
   '/track/:id',
   asyncHandler(async (req, res) => {
+    const isObjectId = req.params.id.match(/^[0-9a-fA-F]{24}$/);
+    
     const order = await Order.findOne({
       $or: [
-        { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null },
+        { _id: isObjectId ? req.params.id : null },
         { customOrderId: req.params.id }
       ]
     }).select(
       'customOrderId orderStatus paymentStatus shippingAddress orderItems trackingNumber totalPrice createdAt deliveredAt'
-    );
+    ).lean();
+    
     if (!order) {
       res.status(404);
       throw new Error('Order not found. Please check your Order ID.');
@@ -365,12 +363,17 @@ router.get(
     const { status, page = 1, limit = 20 } = req.query;
     const query = status ? { orderStatus: status } : {};
     const skip = (Number(page) - 1) * Number(limit);
-    const total = await Order.countDocuments(query);
-    const orders = await Order.find(query)
-      .populate('user', 'name email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
+    
+    // Parallelize count and find
+    const [total, orders] = await Promise.all([
+      Order.countDocuments(query),
+      Order.find(query)
+        .populate('user', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean()
+    ]);
 
     res.json({
       success: true,

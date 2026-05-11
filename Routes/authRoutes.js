@@ -86,7 +86,7 @@ router.get(
   '/profile',
   protect,
   asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).lean();
     res.json({ success: true, data: user });
   })
 );
@@ -157,7 +157,7 @@ router.get(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await User.find().sort({ createdAt: -1 }).lean();
     res.json({ success: true, count: users.length, data: users });
   })
 );
@@ -181,6 +181,9 @@ router.delete(
   })
 );
 
+const { sendResetEmail } = require('../utils/emailBroadcaster');
+const crypto = require('crypto');
+
 // @route   POST /api/auth/forgot-password
 // @desc    Request password reset link
 // @access  Public
@@ -195,12 +198,62 @@ router.post(
       throw new Error('User not found with this email');
     }
 
-    // In a real app, you would generate a token and send an email here.
-    // For now, we simulate success.
-    res.json({ 
-      success: true, 
-      message: 'If an account exists with this email, you will receive a reset link shortly.' 
+    // Get reset token
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset URL
+    // We assume the frontend has a /reset-password/:token route
+    const resetUrl = `${req.get('origin')}/reset-password/${resetToken}`;
+
+    try {
+      await sendResetEmail({
+        email: user.email,
+        name: user.name,
+        resetUrl
+      });
+
+      res.json({ success: true, message: 'Email sent successfully' });
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      res.status(500);
+      throw new Error('Email could not be sent');
+    }
+  })
+);
+
+// @route   PUT /api/auth/reset-password/:token
+// @desc    Reset password
+// @access  Public
+router.put(
+  '/reset-password/:token',
+  asyncHandler(async (req, res) => {
+    // Hash the token from the URL to match the one in DB
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
     });
+
+    if (!user) {
+      res.status(400);
+      throw new Error('Invalid or expired reset token');
+    }
+
+    // Set new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successful' });
   })
 );
 

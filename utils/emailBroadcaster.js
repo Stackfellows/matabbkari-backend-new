@@ -16,7 +16,9 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
     const mailOptions = {
       from: `"Matabbukhari Wellness" <${process.env.EMAIL_USER}>`,
       bcc: emails,
+      replyTo: process.env.EMAIL_USER,
       subject: subject,
+      text: `${title}\n\n${body}\n\nVisit us at: https://matabbukhari.com`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -160,4 +162,60 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
   }
 };
 
-module.exports = { sendBroadcastEmail };
+const sendResetEmail = async ({ email, resetUrl, name }) => {
+  try {
+    const mailOptions = {
+      from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      replyTo: process.env.EMAIL_USER,
+      subject: '🔐 Password Reset Request — Matabbukhari',
+      text: `As-salamu alaykum ${name},\n\nYou requested a password reset. Please use the following link to reset your password:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.\n\n© Matabbukhari Wellness`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            .container { max-width: 600px; margin: 0 auto; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; padding: 40px; border: 1px solid #f0f0f0; border-radius: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .logo { width: 120px; margin-bottom: 10px; }
+            .content { color: #333; line-height: 1.6; }
+            .button-container { text-align: center; margin: 35px 0; }
+            .button { background-color: #2b5a41; color: #ffffff !important; padding: 15px 35px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 12px; }
+            .warning { color: #e74c3c; font-size: 13px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2 style="color: #2b5a41;">Matabbukhari</h2>
+            </div>
+            <div class="content">
+              <p>As-salamu alaykum <strong>${name}</strong>,</p>
+              <p>You are receiving this email because a password reset request was made for your account. Please click the button below to reset your password:</p>
+              
+              <div class="button-container">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </div>
+
+              <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+              
+              <p class="warning">This link will expire in 1 hour for your security.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} Matabbukhari Wellness. Lahore, Pakistan.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Reset email error:', error.message);
+    throw new Error('Email could not be sent');
+  }
+};
+
+module.exports = { sendBroadcastEmail, sendResetEmail };
