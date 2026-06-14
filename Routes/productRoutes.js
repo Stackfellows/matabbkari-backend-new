@@ -4,12 +4,14 @@ const asyncHandler = require('express-async-handler');
 const Product = require('../Models/Product');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
 const { uploadProductImage, cloudinary } = require('../Middelwares/uploadMiddleware');
+const { cacheMiddleware, cache } = require('../Middelwares/cacheMiddleware');
 
 // @route   GET /api/products
 // @desc    Get all products with filtering, sorting, pagination
 // @access  Public
 router.get(
   '/',
+  cacheMiddleware(300), // Cache for 5 minutes
   asyncHandler(async (req, res) => {
     const { category, search, sort, featured } = req.query;
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -123,6 +125,9 @@ router.post(
       imageUrl: images.length > 0 ? images[0].url : null
     }).catch(err => console.error('Product notification error:', err));
 
+    // Clear cache
+    cache.flushAll();
+
     res.status(201).json({ success: true, data: product });
   })
 );
@@ -165,6 +170,9 @@ router.put(
       runValidators: true,
     });
 
+    // Clear cache
+    cache.flushAll();
+
     res.json({ success: true, data: updated });
   })
 );
@@ -183,7 +191,13 @@ router.delete(
       throw new Error('Product not found');
     }
     product.isActive = false;
+    // Modify slug to prevent duplicate key error when a new product with same name is added
+    product.slug = `${product.slug}-deleted-${Date.now()}`;
     await product.save();
+
+    // Clear cache
+    cache.flushAll();
+
     res.json({ success: true, message: 'Product removed successfully' });
   })
 );

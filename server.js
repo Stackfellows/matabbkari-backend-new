@@ -2,6 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const cluster = require('cluster');
+const os = require('os');
+const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 
 // Load env vars FIRST before anything else
 dotenv.config();
@@ -23,6 +29,21 @@ const subscriberRoutes = require('./Routes/subscriberRoutes');
 const testimonialRoutes = require('./Routes/testimonialRoutes');
 
 const app = express();
+
+// ─── Security & Performance Middleware ───────────────────────────────────────
+app.use(compression()); // Compress response bodies
+app.use(helmet()); // Secure HTTP headers
+app.use(mongoSanitize()); // Prevent NoSQL Injection
+
+// Global Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // Limit each IP to 300 requests per `window`
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+app.use('/api', limiter);
 
 // ─── Core Middleware ─────────────────────────────────────────────────────────
 app.use(cors({
@@ -93,15 +114,33 @@ app.use(errorHandler);
 // ─── Connect & Start ────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3300;
 
-connectDB().then(() => {
-  const server = app.listen(PORT, () => {
-    console.log(`\n🚀  Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-    console.log(`📡  Health: http://localhost:${PORT}/api/health\n`);
+const isMaster = cluster.isPrimary || cluster.isMaster;
+
+if (isMaster) {
+  const numCPUs = os.cpus().length;
+  console.log(`\n👨‍💼 Primary cluster setting up ${numCPUs} workers...`);
+
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('online', (worker) => {
+    console.log(`👷 Worker ${worker.process.pid} is online`);
   });
 
-  // Handle unhandled promise rejections gracefully
-  process.on('unhandledRejection', (err) => {
-    console.error('❌  Unhandled Rejection:', err.message);
-    server.close(() => process.exit(1));
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`❌ Worker ${worker.process.pid} died. Restarting...`);
+    cluster.fork();
   });
-});
+} else {
+  connectDB().then(() => {
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Worker ${process.pid} running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+    });
+
+    process.on('unhandledRejection', (err) => {
+      console.error(`❌ Worker ${process.pid} Unhandled Rejection:`, err.message);
+      server.close(() => process.exit(1));
+    });
+  });
+}
