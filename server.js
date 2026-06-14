@@ -30,6 +30,21 @@ const testimonialRoutes = require('./Routes/testimonialRoutes');
 
 const app = express();
 
+// ─── Core Middleware ─────────────────────────────────────────────────────────
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://matabbukhari.vercel.app',
+    'https://matabbukhari.netlify.app',
+    'https://matabbukhari.com',
+    'https://www.matabbukhari.com',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 // ─── Security & Performance Middleware ───────────────────────────────────────
 app.use(compression()); // Compress response bodies
 app.use(helmet()); // Secure HTTP headers
@@ -45,20 +60,7 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// ─── Core Middleware ─────────────────────────────────────────────────────────
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://matabbukhari.vercel.app',
-    'https://matabbukhari.netlify.app',
-    'https://matabbukhari.com',
-    'https://www.matabbukhari.com',
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
