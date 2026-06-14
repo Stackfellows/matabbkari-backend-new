@@ -32,17 +32,10 @@ const app = express();
 
 // ─── Core Middleware ─────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://matabbukhari.vercel.app',
-    'https://matabbukhari.netlify.app',
-    'https://matabbukhari.com',
-    'https://www.matabbukhari.com',
-  ],
+  origin: true, // Reflects the incoming origin automatically
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
 
 // ─── Security & Performance Middleware ───────────────────────────────────────
