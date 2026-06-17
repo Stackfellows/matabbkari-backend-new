@@ -13,141 +13,163 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
 
     const emails = subscribers.map((s) => s.email);
 
+    const attachments = [{
+      filename: 'email_banner.png',
+      path: 'D:/Batch 61/Assignment/Matabbukhari/Matabbukhari-backend/images/email.png',
+      cid: 'email_banner'
+    }];
+
     const mailOptions = {
       from: `"Matabbukhari Wellness" <${process.env.EMAIL_USER}>`,
       bcc: emails,
       replyTo: process.env.EMAIL_USER,
       subject: subject,
       text: `${title}\n\n${body}\n\nVisit us at: https://matabbukhari.com`,
+      attachments: attachments,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: #f4f7f5;
+              font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+              -webkit-font-smoothing: antialiased;
+            }
+            .wrapper {
+              width: 100%;
+              background-color: #f4f7f5;
+              padding: 20px 0;
+            }
             .email-container {
               max-width: 600px;
               margin: 0 auto;
-              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-              background-color: #f9f9f9;
-              color: #333;
-            }
-            .header {
-              background-color: #0a0a0a;
-              padding: 40px 20px;
-              text-align: center;
-              border-bottom: 3px solid #c9a84c;
-            }
-            .logo {
-              width: 150px;
-              height: auto;
-              margin-bottom: 10px;
-            }
-            .brand-tagline {
-              color: #c9a84c;
-              font-size: 12px;
-              letter-spacing: 3px;
-              text-transform: uppercase;
-              font-weight: bold;
-            }
-            .hero-section {
               background-color: #ffffff;
-              padding: 50px 40px;
-              text-align: center;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            }
+            .banner-img {
+              width: 100%;
+              height: auto;
+              display: block;
+            }
+            .content {
+              padding: 40px 30px;
+              color: #2c3e50;
+            }
+            .brand-tag {
+              font-size: 11px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+              color: #c9a84c;
+              margin-bottom: 12px;
             }
             .content-title {
-              color: #0a0a0a;
-              font-size: 28px;
-              margin-bottom: 20px;
+              font-size: 24px;
               font-weight: 700;
-              line-height: 1.2;
-            }
-            .product-image {
-              width: 100%;
-              max-width: 520px;
-              height: auto;
-              border-radius: 12px;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-              margin: 20px 0;
+              color: #1a3a2a;
+              margin: 0 0 20px 0;
+              line-height: 1.3;
             }
             .body-text {
-              font-size: 16px;
-              line-height: 1.8;
-              color: #555;
-              text-align: left;
+              font-size: 15px;
+              line-height: 1.7;
+              color: #4a5568;
               margin-bottom: 30px;
+            }
+            .product-img-container {
+              text-align: center;
+              margin: 25px 0;
+            }
+            .product-image {
+              max-width: 100%;
+              height: auto;
+              border-radius: 12px;
+              box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
             }
             .cta-container {
               text-align: center;
-              padding: 40px 20px;
-              background-color: #ffffff;
+              margin-top: 30px;
             }
             .cta-button {
               background-color: #2b5a41;
               color: #ffffff !important;
-              padding: 18px 40px;
+              padding: 16px 36px;
               text-decoration: none;
-              border-radius: 50px;
-              font-weight: bold;
+              border-radius: 30px;
+              font-weight: 700;
               display: inline-block;
               letter-spacing: 1px;
               text-transform: uppercase;
-              font-size: 14px;
-              box-shadow: 0 4px 15px rgba(43, 90, 65, 0.3);
+              font-size: 13px;
+              transition: all 0.3s ease;
+              box-shadow: 0 6px 20px rgba(43, 90, 65, 0.25);
             }
             .footer {
-              background-color: #0a0a0a;
-              color: #888;
-              padding: 40px 20px;
+              background-color: #1a1a1a;
+              color: #a0aec0;
+              padding: 40px 30px;
               text-align: center;
               font-size: 12px;
+              line-height: 1.6;
             }
-            .social-icons {
+            .social-links {
               margin-bottom: 20px;
             }
-            .social-icon {
-              display: inline-block;
-              margin: 0 10px;
+            .social-link {
               color: #c9a84c;
               text-decoration: none;
+              margin: 0 10px;
+              font-weight: 600;
             }
-            .divider {
-              height: 1px;
-              background-color: #333;
-              margin: 30px 0;
+            .address {
+              color: #718096;
+              margin-top: 15px;
+              border-top: 1px solid #2d3748;
+              padding-top: 15px;
             }
           </style>
         </head>
         <body>
-          <div class="email-container">
-            <div class="header">
-              <img src="https://matabbukhari.com/logo.png" alt="Matabbukhari" class="logo">
-              <div class="brand-tagline">Tradition of Natural Healing</div>
-            </div>
-            
-            <div class="hero-section">
-              <h1 class="content-title">${title}</h1>
+          <div class="wrapper">
+            <div class="email-container">
+              <!-- Banner Image -->
+              <img src="cid:email_banner" alt="Matabbukhari Banner" class="banner-img" />
               
-              ${imageUrl ? `<img src="${imageUrl}" alt="Update" class="product-image">` : ''}
-              
-              <div class="body-text">
-                ${body.replace(/\n/g, '<br>')}
-              </div>
-            </div>
+              <div class="content">
+                <div class="brand-tag">Premium Herbal Wellness</div>
+                <h1 class="content-title">${title}</h1>
+                
+                ${imageUrl ? `
+                  <div class="product-img-container">
+                    <img src="${imageUrl}" alt="Product" class="product-image" />
+                  </div>
+                ` : ''}
+                
+                <div class="body-text">
+                  ${body.replace(/\n/g, '<br>')}
+                </div>
 
-            <div class="cta-container">
-              <a href="https://matabbukhari.com" class="cta-button">Explore More</a>
-            </div>
-
-            <div class="footer">
-              <div class="social-icons">
-                <a href="#" class="social-icon">Facebook</a>
-                <a href="#" class="social-icon">Instagram</a>
-                <a href="#" class="social-icon">Twitter</a>
+                <div class="cta-container">
+                  <a href="https://matabbukhari.com" class="cta-button">Explore More</a>
+                </div>
               </div>
-              <p>© ${new Date().getFullYear()} Matabbukhari. All rights reserved.</p>
-              <p>You're receiving this because you're a valued member of our wellness community.</p>
-              <div class="divider"></div>
-              <p>82-C Habib Park Multan Chungi Mansoorah, Lahore, Pakistan</p>
+
+              <div class="footer">
+                <div class="social-links">
+                  <a href="https://facebook.com/matabbukhari" class="social-link">Facebook</a>
+                  <a href="https://instagram.com/matabbukhari" class="social-link">Instagram</a>
+                </div>
+                <p>© ${new Date().getFullYear()} Matabbukhari Wellness. All rights reserved.</p>
+                <p>You're receiving this because you're subscribed to our natural healing updates.</p>
+                <p class="address">82-C Habib Park Multan Chungi Mansoorah, Lahore, Pakistan</p>
+              </div>
             </div>
           </div>
         </body>
@@ -164,46 +186,158 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
 
 const sendResetEmail = async ({ email, resetUrl, name }) => {
   try {
+    const attachments = [{
+      filename: 'email_banner.png',
+      path: 'D:/Batch 61/Assignment/Matabbukhari/Matabbukhari-backend/images/email.png',
+      cid: 'email_banner'
+    }];
+
     const mailOptions = {
       from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
       to: email,
       replyTo: process.env.EMAIL_USER,
       subject: '🔐 Password Reset Request — Matabbukhari',
       text: `As-salamu alaykum ${name},\n\nYou requested a password reset. Please use the following link to reset your password:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.\n\n© Matabbukhari Wellness`,
+      attachments: attachments,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            .container { max-width: 600px; margin: 0 auto; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; padding: 40px; border: 1px solid #f0f0f0; border-radius: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .logo { width: 120px; margin-bottom: 10px; }
-            .content { color: #333; line-height: 1.6; }
-            .button-container { text-align: center; margin: 35px 0; }
-            .button { background-color: #2b5a41; color: #ffffff !important; padding: 15px 35px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block; }
-            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 12px; }
-            .warning { color: #e74c3c; font-size: 13px; margin-top: 20px; }
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: #f4f7f5;
+              font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+              -webkit-font-smoothing: antialiased;
+            }
+            .wrapper {
+              width: 100%;
+              background-color: #f4f7f5;
+              padding: 20px 0;
+            }
+            .email-container {
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            }
+            .banner-img {
+              width: 100%;
+              height: auto;
+              display: block;
+            }
+            .content {
+              padding: 40px 30px;
+              color: #2c3e50;
+            }
+            .brand-tag {
+              font-size: 11px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+              color: #c9a84c;
+              margin-bottom: 12px;
+            }
+            .content-title {
+              font-size: 22px;
+              font-weight: 700;
+              color: #1a3a2a;
+              margin: 0 0 20px 0;
+              line-height: 1.3;
+            }
+            .body-text {
+              font-size: 15px;
+              line-height: 1.7;
+              color: #4a5568;
+              margin-bottom: 30px;
+            }
+            .cta-container {
+              text-align: center;
+              margin-top: 30px;
+            }
+            .cta-button {
+              background-color: #2b5a41;
+              color: #ffffff !important;
+              padding: 15px 35px;
+              text-decoration: none;
+              border-radius: 30px;
+              font-weight: 700;
+              display: inline-block;
+              font-size: 14px;
+              transition: all 0.3s ease;
+              box-shadow: 0 6px 20px rgba(43, 90, 65, 0.25);
+            }
+            .warning {
+              color: #e53e3e;
+              font-size: 13px;
+              margin-top: 25px;
+              background-color: #fff5f5;
+              padding: 12px;
+              border-radius: 8px;
+              border-left: 4px solid #e53e3e;
+            }
+            .footer {
+              background-color: #1a1a1a;
+              color: #a0aec0;
+              padding: 40px 30px;
+              text-align: center;
+              font-size: 12px;
+              line-height: 1.6;
+            }
+            .social-links {
+              margin-bottom: 20px;
+            }
+            .social-link {
+              color: #c9a84c;
+              text-decoration: none;
+              margin: 0 10px;
+              font-weight: 600;
+            }
+            .address {
+              color: #718096;
+              margin-top: 15px;
+              border-top: 1px solid #2d3748;
+              padding-top: 15px;
+            }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h2 style="color: #2b5a41;">Matabbukhari</h2>
-            </div>
-            <div class="content">
-              <p>As-salamu alaykum <strong>${name}</strong>,</p>
-              <p>You are receiving this email because a password reset request was made for your account. Please click the button below to reset your password:</p>
+          <div class="wrapper">
+            <div class="email-container">
+              <!-- Banner Image -->
+              <img src="cid:email_banner" alt="Matabbukhari Banner" class="banner-img" />
               
-              <div class="button-container">
-                <a href="${resetUrl}" class="button">Reset Password</a>
+              <div class="content">
+                <div class="brand-tag">Account Security</div>
+                <h1 class="content-title">Password Reset Request</h1>
+                
+                <div class="body-text">
+                  <p>As-salamu alaykum <strong>${name}</strong>,</p>
+                  <p>We received a request to reset your password. Click the button below to secure your account and set a new password:</p>
+                </div>
+
+                <div class="cta-container">
+                  <a href="${resetUrl}" class="cta-button">Reset Password</a>
+                </div>
+
+                <div class="warning">
+                  <strong>Important:</strong> This link will expire in 1 hour. If you did not make this request, you can safely ignore this email.
+                </div>
               </div>
 
-              <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-              
-              <p class="warning">This link will expire in 1 hour for your security.</p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Matabbukhari Wellness. Lahore, Pakistan.</p>
+              <div class="footer">
+                <div class="social-links">
+                  <a href="https://facebook.com/matabbukhari" class="social-link">Facebook</a>
+                  <a href="https://instagram.com/matabbukhari" class="social-link">Instagram</a>
+                </div>
+                <p>© ${new Date().getFullYear()} Matabbukhari Wellness. All rights reserved.</p>
+                <p class="address">82-C Habib Park Multan Chungi Mansoorah, Lahore, Pakistan</p>
+              </div>
             </div>
           </div>
         </body>
@@ -219,3 +353,4 @@ const sendResetEmail = async ({ email, resetUrl, name }) => {
 };
 
 module.exports = { sendBroadcastEmail, sendResetEmail };
+

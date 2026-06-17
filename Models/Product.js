@@ -61,6 +61,7 @@ const productSchema = new mongoose.Schema(
         'Depression & Anxiety',
         'Arthritis Relief & Joint Health',
         'Gut Health',
+        'Sharabats',
         'Books',
       ],
     },

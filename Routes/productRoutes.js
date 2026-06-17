@@ -193,7 +193,7 @@ router.delete(
     product.isActive = false;
     // Modify slug to prevent duplicate key error when a new product with same name is added
     product.slug = `${product.slug}-deleted-${Date.now()}`;
-    await product.save();
+    await product.save({ validateBeforeSave: false });
 
     // Clear cache
     cache.flushAll();
