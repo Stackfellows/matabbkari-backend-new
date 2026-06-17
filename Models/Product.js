@@ -100,11 +100,35 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Auto-generate slug from name
+// Auto-generate unique slug from name
 productSchema.pre('save', async function (next) {
-  if (!this.isModified('name')) return next();
+  if (!this.isModified('name') && this.slug) return next();
+  
   const slugify = require('slugify');
-  this.slug = slugify(this.name, { lower: true, strict: true });
+  let baseSlug = slugify(this.name, { lower: true, strict: true });
+  
+  if (!baseSlug) {
+    baseSlug = 'product';
+  }
+  
+  let uniqueSlug = baseSlug;
+  let count = 1;
+  
+  while (true) {
+    const existingProduct = await this.constructor.findOne({
+      slug: uniqueSlug,
+      _id: { $ne: this._id },
+    });
+    
+    if (!existingProduct) {
+      break;
+    }
+    
+    uniqueSlug = `${baseSlug}-${count}`;
+    count++;
+  }
+  
+  this.slug = uniqueSlug;
   next();
 });
 

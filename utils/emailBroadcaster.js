@@ -1,10 +1,5 @@
-const nodemailer = require('nodemailer');
 const Subscriber = require('../Models/Subscriber');
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-});
+const transporter = require('./emailTransporter');
 
 const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
   try {

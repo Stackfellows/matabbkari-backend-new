@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const nodemailer = require('nodemailer');
 const Subscriber = require('../Models/Subscriber');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-});
+const transporter = require('../utils/emailTransporter');
 
 // @route   POST /api/subscribers
 // @desc    Subscribe to newsletter

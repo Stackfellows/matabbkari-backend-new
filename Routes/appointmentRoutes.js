@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const Appointment = require('../Models/Appointment');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
 const { uploadAppointmentReports } = require('../Middelwares/uploadMiddleware');
-const nodemailer = require('nodemailer');
+const transporter = require('../utils/emailTransporter');
 
 
 // @route   POST /api/appointments
@@ -44,10 +44,6 @@ router.post(
     const appointment = await Appointment.create(appointmentData);
 
     // Send confirmation email
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: #ffffff; color: #333; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
@@ -131,11 +127,6 @@ router.put(
 
     // Send email ONLY if status changed to 'Confirmed'
     if (status === 'Confirmed' && oldStatus !== 'Confirmed' && appointment.email) {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      });
-
       const confirmHtml = `
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: auto; background: #ffffff; color: #1a1a1a; padding: 40px; border: 1px solid #f0f0f0; border-radius: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">

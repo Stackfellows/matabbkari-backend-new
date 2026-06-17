@@ -3,17 +3,8 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const Order = require('../Models/Order');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
-const nodemailer = require('nodemailer');
 const { uploadPaymentScreenshot } = require('../Middelwares/uploadMiddleware');
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const transporter = require('../utils/emailTransporter');
 
 // Send order confirmation email
 const sendOrderConfirmationEmail = async (order) => {
