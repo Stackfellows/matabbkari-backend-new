@@ -31,8 +31,21 @@ const testimonialRoutes = require('./Routes/testimonialRoutes');
 const app = express();
 
 // ─── Core Middleware ─────────────────────────────────────────────────────────
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) 
+  : [];
+
 app.use(cors({
-  origin: true, // Reflects the incoming origin automatically
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl) or in development
+    if (!origin || process.env.NODE_ENV === 'development' || allowedOrigins.length === 0) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -109,33 +122,42 @@ app.use(errorHandler);
 // ─── Connect & Start ────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3300;
 
-const isMaster = cluster.isPrimary || cluster.isMaster;
-
-if (isMaster) {
-  const numCPUs = os.cpus().length;
-  console.log(`\n👨‍💼 Primary cluster setting up ${numCPUs} workers...`);
-
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
-
-  cluster.on('online', (worker) => {
-    console.log(`👷 Worker ${worker.process.pid} is online`);
-  });
-
-  cluster.on('exit', (worker, code, signal) => {
-    console.log(`❌ Worker ${worker.process.pid} died. Restarting...`);
-    cluster.fork();
-  });
-} else {
+const startServer = () => {
   connectDB().then(() => {
     const server = app.listen(PORT, () => {
-      console.log(`🚀 Worker ${process.pid} running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+      console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode (PID: ${process.pid})`);
     });
 
     process.on('unhandledRejection', (err) => {
-      console.error(`❌ Worker ${process.pid} Unhandled Rejection:`, err.message);
+      console.error(`❌ Unhandled Rejection (PID: ${process.pid}):`, err.message);
       server.close(() => process.exit(1));
     });
+  }).catch(err => {
+    console.error('❌ Failed to connect to DB:', err.message);
   });
+};
+
+if (process.env.USE_CLUSTER === 'true') {
+  const isMaster = cluster.isPrimary || cluster.isMaster;
+  if (isMaster) {
+    const numCPUs = os.cpus().length;
+    console.log(`\n👨‍💼 Primary cluster setting up ${numCPUs} workers...`);
+
+    for (let i = 0; i < numCPUs; i++) {
+      cluster.fork();
+    }
+
+    cluster.on('online', (worker) => {
+      console.log(`👷 Worker ${worker.process.pid} is online`);
+    });
+
+    cluster.on('exit', (worker, code, signal) => {
+      console.log(`❌ Worker ${worker.process.pid} died. Restarting...`);
+      cluster.fork();
+    });
+  } else {
+    startServer();
+  }
+} else {
+  startServer();
 }

@@ -100,6 +100,15 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Add Indexes for optimization
+productSchema.index({ slug: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ isFeatured: 1 });
+productSchema.index({ isActive: 1 });
+productSchema.index({ price: 1 });
+productSchema.index({ ratings: -1 });
+
+
 // Auto-generate unique slug from name
 productSchema.pre('save', async function (next) {
   if (!this.isModified('name') && this.slug) return next();

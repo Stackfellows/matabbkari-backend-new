@@ -3,6 +3,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const Testimonial = require('../Models/Testimonial');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
+const { cacheMiddleware, cache } = require('../Middelwares/cacheMiddleware');
 
 // @route   POST /api/testimonials
 // @desc    Submit a new testimonial
@@ -24,6 +25,9 @@ router.post(
       rating: Number(rating)
     });
 
+    // Clear cache to show new feedback (if auto-approved, or just standard practice)
+    cache.flushAll();
+
     res.status(201).json({
       success: true,
       message: 'Thank you for your feedback! Your journey is now live.',
@@ -37,6 +41,7 @@ router.post(
 // @access  Public
 router.get(
   '/',
+  cacheMiddleware(300), // Cache testimonials for 5 minutes
   asyncHandler(async (req, res) => {
     const testimonials = await Testimonial.find({ isApproved: true }).sort({ createdAt: -1 });
     res.json({ success: true, count: testimonials.length, data: testimonials });
@@ -71,6 +76,10 @@ router.put(
     }
     testimonial.isApproved = !testimonial.isApproved;
     await testimonial.save();
+    
+    // Clear cache so approval state reflects immediately
+    cache.flushAll();
+    
     res.json({ success: true, data: testimonial });
   })
 );
@@ -89,6 +98,10 @@ router.delete(
       throw new Error('Testimonial not found');
     }
     await testimonial.deleteOne();
+    
+    // Clear cache
+    cache.flushAll();
+    
     res.json({ success: true, message: 'Testimonial removed' });
   })
 );

@@ -1,5 +1,6 @@
 const Subscriber = require('../Models/Subscriber');
 const transporter = require('./emailTransporter');
+const path = require('path');
 
 const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
   try {
@@ -8,19 +9,12 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
 
     const emails = subscribers.map((s) => s.email);
 
-    const attachments = [{
-      filename: 'email_banner.png',
-      path: 'D:/Batch 61/Assignment/Matabbukhari/Matabbukhari-backend/images/email.png',
-      cid: 'email_banner'
-    }];
-
     const mailOptions = {
       from: `"Matabbukhari Wellness" <${process.env.EMAIL_USER}>`,
       bcc: emails,
       replyTo: process.env.EMAIL_USER,
       subject: subject,
       text: `${title}\n\n${body}\n\nVisit us at: https://matabbukhari.com`,
-      attachments: attachments,
       html: `
         <!DOCTYPE html>
         <html>
@@ -134,8 +128,8 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
         <body>
           <div class="wrapper">
             <div class="email-container">
-              <!-- Banner Image -->
-              <img src="cid:email_banner" alt="Matabbukhari Banner" class="banner-img" />
+              <!-- Header Banner -->
+              <img src="https://res.cloudinary.com/ddkuwdplt/image/upload/v1781758773/bill-recpt_cslryn.png" alt="Matabbukhari Banner" class="banner-img" />
               
               <div class="content">
                 <div class="brand-tag">Premium Herbal Wellness</div>
@@ -181,19 +175,12 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
 
 const sendResetEmail = async ({ email, resetUrl, name }) => {
   try {
-    const attachments = [{
-      filename: 'email_banner.png',
-      path: 'D:/Batch 61/Assignment/Matabbukhari/Matabbukhari-backend/images/email.png',
-      cid: 'email_banner'
-    }];
-
     const mailOptions = {
       from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
       to: email,
       replyTo: process.env.EMAIL_USER,
       subject: '🔐 Password Reset Request — Matabbukhari',
       text: `As-salamu alaykum ${name},\n\nYou requested a password reset. Please use the following link to reset your password:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.\n\n© Matabbukhari Wellness`,
-      attachments: attachments,
       html: `
         <!DOCTYPE html>
         <html>
@@ -304,8 +291,8 @@ const sendResetEmail = async ({ email, resetUrl, name }) => {
         <body>
           <div class="wrapper">
             <div class="email-container">
-              <!-- Banner Image -->
-              <img src="cid:email_banner" alt="Matabbukhari Banner" class="banner-img" />
+              <!-- Header Banner -->
+              <img src="https://res.cloudinary.com/ddkuwdplt/image/upload/v1781758773/bill-recpt_cslryn.png" alt="Matabbukhari Banner" class="banner-img" />
               
               <div class="content">
                 <div class="brand-tag">Account Security</div>

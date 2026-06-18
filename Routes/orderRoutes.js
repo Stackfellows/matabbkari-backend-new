@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const asyncHandler = require('express-async-handler');
 const Order = require('../Models/Order');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
@@ -23,9 +24,8 @@ const sendOrderConfirmationEmail = async (order) => {
       <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .header { background-color: #1a3626; padding: 40px 20px; text-align: center; }
-        .header h1 { color: #d4af37; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
-        .header p { color: #a9bfae; margin: 10px 0 0 0; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+        .header { padding: 0; text-align: center; line-height: 0; }
+        .header img { width: 100%; max-width: 600px; display: block; border: none; outline: none; margin: 0 auto; }
         .content { padding: 40px; color: #333333; }
         .greeting { font-size: 18px; font-weight: 300; margin-bottom: 20px; color: #1a3626; }
         .order-title { font-size: 14px; text-transform: uppercase; color: #888888; letter-spacing: 1px; border-bottom: 1px solid #eeeeee; padding-bottom: 10px; margin-bottom: 20px; }
@@ -51,8 +51,7 @@ const sendOrderConfirmationEmail = async (order) => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>Matabbukhari</h1>
-          <p>Premium Herbal Wellness</p>
+          <img src="cid:bill_recpt_header" alt="Matabbukhari" />
         </div>
         <div class="content">
           <div class="greeting">Dear ${order.shippingAddress.fullName},</div>
@@ -115,16 +114,23 @@ const sendOrderConfirmationEmail = async (order) => {
     </html>
   `;
 
-    const mailOptions = {
-      from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
-      to: recipientEmail,
-      replyTo: process.env.EMAIL_USER,
-      subject: `✨ Order Confirmed — Matabbukhari #${orderIdToDisplay}`,
-      text: `Dear ${order.shippingAddress.fullName},\n\nThank you for your order #${orderIdToDisplay}. We have received it and are preparing it with care.\n\nTotal: Rs. ${order.totalPrice.toLocaleString()}\n\n© Matabbukhari Wellness`,
-      html: emailHtml,
-    };
+  const mailOptions = {
+    from: `"Matabbukhari Support" <${process.env.EMAIL_USER}>`,
+    to: recipientEmail,
+    replyTo: process.env.EMAIL_USER,
+    subject: `Order Confirmed — Matabbukhari #${orderIdToDisplay}`,
+    text: `Dear ${order.shippingAddress.fullName},\n\nThank you for your order #${orderIdToDisplay}. We have received it and are preparing it with care.\n\nTotal: Rs. ${order.totalPrice.toLocaleString()}\n\n© Matabbukhari Wellness`,
+    html: emailHtml,
+    attachments: [
+      {
+        filename: 'bill-recpt.png',
+        path: path.join(__dirname, '../images/bill-recpt-email.png'),
+        cid: 'bill_recpt_header'
+      }
+    ]
+  };
 
-    await transporter.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions);
 };
 
 // Send order status update email
@@ -138,14 +144,14 @@ const sendStatusUpdateEmail = async (order, type, newStatus) => {
 
   if (type === 'payment') {
     if (newStatus === 'Failed') {
-      subject = `⚠️ Payment Failed for Order #${orderIdToDisplay}`;
+      subject = `Payment Failed for Order #${orderIdToDisplay}`;
     } else if (newStatus === 'Paid') {
-      subject = `✅ Payment Received for Order #${orderIdToDisplay}`;
+      subject = `Payment Received for Order #${orderIdToDisplay}`;
     } else {
       return;
     }
   } else if (type === 'order') {
-    subject = `📦 Order Update: ${newStatus} — #${orderIdToDisplay}`;
+    subject = `Order Update: ${newStatus} — #${orderIdToDisplay}`;
   }
 
   const emailHtml = `
@@ -157,9 +163,8 @@ const sendStatusUpdateEmail = async (order, type, newStatus) => {
       <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .header { background-color: #1a3626; padding: 40px 20px; text-align: center; }
-        .header h1 { color: #d4af37; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
-        .header p { color: #a9bfae; margin: 10px 0 0 0; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+        .header { padding: 0; text-align: center; line-height: 0; }
+        .header img { width: 100%; max-width: 600px; display: block; border: none; outline: none; margin: 0 auto; }
         .content { padding: 40px 40px 60px 40px; color: #333333; text-align: center; }
         .greeting { font-size: 18px; font-weight: 300; margin-bottom: 20px; color: #1a3626; text-align: left; }
         .status-box { display: inline-block; padding: 15px 30px; border: 2px solid #d4af37; border-radius: 4px; color: #d4af37; font-size: 20px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin: 20px 0; }
@@ -177,8 +182,7 @@ const sendStatusUpdateEmail = async (order, type, newStatus) => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>Matabbukhari</h1>
-          <p>Premium Herbal Wellness</p>
+          <img src="cid:bill_recpt_header" alt="Matabbukhari" />
         </div>
         <div class="content">
           <div class="greeting">Dear ${order.shippingAddress?.fullName || 'Customer'},</div>
@@ -220,6 +224,13 @@ const sendStatusUpdateEmail = async (order, type, newStatus) => {
     subject,
     text: `Update for Order #${orderIdToDisplay}: ${newStatus}.\n\nVisit us for more details: https://matabbukhari.com`,
     html: emailHtml,
+    attachments: [
+      {
+        filename: 'bill-recpt.png',
+        path: path.join(__dirname, '../images/bill-recpt-email.png'),
+        cid: 'bill_recpt_header'
+      }
+    ]
   });
 };
 // @route   POST /api/orders

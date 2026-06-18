@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const Offer = require('../Models/Offer');
 const { protect, adminOnly } = require('../Middelwares/authMiddleware');
 const { uploadOfferImage } = require('../Middelwares/uploadMiddleware');
+const { cacheMiddleware, cache } = require('../Middelwares/cacheMiddleware');
 
 const { sendBroadcastEmail } = require('../utils/emailBroadcaster');
 
@@ -32,6 +33,9 @@ router.post(
       image
     });
 
+    // Clear cache so that the new offer appears immediately
+    cache.flushAll();
+
     // Notify subscribers about the new offer (non-blocking)
     sendBroadcastEmail({
       subject: `New Special Offer: ${title} 🎁`,
@@ -49,6 +53,7 @@ router.post(
 // @access  Public
 router.get(
   '/',
+  cacheMiddleware(300), // Cache offers for 5 minutes
   asyncHandler(async (req, res) => {
     const offers = await Offer.find({ isActive: true }).sort({ createdAt: -1 });
     res.json({ success: true, data: offers });
@@ -69,6 +74,10 @@ router.delete(
       throw new Error('Offer not found');
     }
     await offer.deleteOne();
+    
+    // Clear cache so that deletion is reflected
+    cache.flushAll();
+    
     res.json({ success: true, message: 'Offer removed' });
   })
 );
