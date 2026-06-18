@@ -129,17 +129,11 @@ const sendBroadcastEmail = async ({ subject, title, body, imageUrl }) => {
           <div class="wrapper">
             <div class="email-container">
               <!-- Header Banner -->
-              <img src="https://res.cloudinary.com/ddkuwdplt/image/upload/v1781758773/bill-recpt_cslryn.png" alt="Matabbukhari Banner" class="banner-img" />
+              <img src="${imageUrl || 'https://res.cloudinary.com/ddkuwdplt/image/upload/v1781758773/bill-recpt_cslryn.png'}" alt="Matabbukhari Banner" class="banner-img" />
               
               <div class="content">
                 <div class="brand-tag">Premium Herbal Wellness</div>
                 <h1 class="content-title">${title}</h1>
-                
-                ${imageUrl ? `
-                  <div class="product-img-container">
-                    <img src="${imageUrl}" alt="Product" class="product-image" />
-                  </div>
-                ` : ''}
                 
                 <div class="body-text">
                   ${body.replace(/\n/g, '<br>')}

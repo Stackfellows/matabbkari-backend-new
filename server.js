@@ -35,13 +35,25 @@ const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) 
   : [];
 
+const defaultAllowedOrigins = [
+  'https://matabbukhari.com',
+  'https://www.matabbukhari.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173'
+];
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl) or in development
-    if (!origin || process.env.NODE_ENV === 'development' || allowedOrigins.length === 0) {
+    if (!origin || process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
-    if (allowedOrigins.includes(origin)) {
+    const isAllowed = defaultAllowedOrigins.includes(origin) || 
+                      allowedOrigins.includes(origin) ||
+                      origin.endsWith('.matabbukhari.com') ||
+                      origin === 'https://matabbukhari.com';
+    if (isAllowed) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
